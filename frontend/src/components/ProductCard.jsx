@@ -9,8 +9,7 @@ function ProductCard({ product }) {
   const isOwner = user && product.user_id === user.id;
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this product?"))
-      deleteProduct(product.id);
+    if (window.confirm("Are you sure you want to delete this product?")) deleteProduct(product.id);
   };
   return (
     <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
@@ -26,9 +25,7 @@ function ProductCard({ product }) {
       <div className="card-body">
         {/* PRODUCT INFO */}
         <h2 className="card-title text-lg font-semibold">{product.name}</h2>
-        <p className="text-2xl font-bold text-primary">
-          ${Number(product.price).toFixed(2)}
-        </p>
+        <p className="text-2xl font-bold text-primary">${Number(product.price).toFixed(2)}</p>
 
         {/* CARD ACTIONS */}
         {isOwner && (
