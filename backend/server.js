@@ -3,51 +3,33 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import { rateLimit } from "express-rate-limit";
 import path from "path";
 import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import { sql } from "./config/db.js";
-import { aj } from "./lib/arcjet.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const __dirname = path.resolve();
+
+// Render sits behind one proxy hop; needed so rate limiting sees the real client IP
+if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet({ contentSecurityPolicy: false })); // sets security-related HTTP headers
 app.use(morgan("dev")); // log the request
 
-// rate limiting + bot protection, API only (static assets would burn tokens)
-app.use("/api", async (req, res, next) => {
-  try {
-    const decision = await aj.protect(req, { requested: 1 }); // each request consumes 1 token
-
-    if (decision.isDenied()) {
-      if (decision.reason.isRateLimit()) {
-        return res.status(429).json({ error: "Too Many Requests" });
-      }
-      if (decision.reason.isBot()) {
-        return res.status(403).json({ error: "Bot access denied" });
-      }
-      return res.status(403).json({ error: "Forbidden" });
-    }
-
-    // check for spoofed bots
-    if (
-      decision.results.some(
-        (result) => result.reason.isBot() && result.reason.isSpoofed(),
-      )
-    ) {
-      return res.status(403).json({ error: "Spoofed bot detected" });
-    }
-
-    next();
-  } catch (error) {
-    console.log("arcjet error", error);
-    next(error);
-  }
-});
+// general API rate limit (per IP); auth routes add a stricter one
+app.use(
+  "/api",
+  rateLimit({
+    windowMs: 60 * 1000,
+    limit: 100,
+    message: { success: false, message: "Too many requests" },
+  }),
+);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
@@ -61,14 +43,22 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// idempotent: safe to run on every boot, also migrates the old products table
+// idempotent: safe to run on every boot
 async function initDB() {
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT now()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT UNIQUE NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL
     )
   `;
   await sql`
@@ -77,14 +67,15 @@ async function initDB() {
       name VARCHAR(255) NOT NULL,
       image TEXT NOT NULL,
       price DECIMAL(10, 2) NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT now()
     )
   `;
-  await sql`ALTER TABLE products ALTER COLUMN image TYPE TEXT`;
-  await sql`
-    ALTER TABLE products
-    ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
-  `;
+  // Supabase exposes the public schema over its REST API using the anon key.
+  // RLS with no policies blocks that path; this server's DB role owns the tables and bypasses RLS.
+  await sql`ALTER TABLE users ENABLE ROW LEVEL SECURITY`;
+  await sql`ALTER TABLE refresh_tokens ENABLE ROW LEVEL SECURITY`;
+  await sql`ALTER TABLE products ENABLE ROW LEVEL SECURITY`;
   console.log("Database initialized successfully");
 }
 

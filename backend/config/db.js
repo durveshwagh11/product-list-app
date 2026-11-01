@@ -1,11 +1,7 @@
-import { neon } from "@neondatabase/serverless";
-import dotenv from "dotenv";
+import "dotenv/config";
+import postgres from "postgres";
 
-dotenv.config();
+// Supabase: Project Settings -> Database -> Connection string (pooler URI)
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL env variable is not set");
 
-const { PGHOST, PGDATABASE, PGUSER, PGPASSWORD } = process.env;
-
-// CREATE A SQL CONNECTION USING ENV VARIABLES
-export const sql = neon(
-    `postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}/${PGDATABASE}?sslmode=require`
-);
+export const sql = postgres(process.env.DATABASE_URL, { ssl: "require" });
