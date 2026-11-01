@@ -3,9 +3,13 @@ import { useProductStore } from "../store/useProductStore";
 import { PackageIcon, PlusCircleIcon, RefreshCwIcon } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import AddProductModal from "../components/AddProductModal";
+import { Link } from "react-router-dom";
+import { useAuthStore } from "../store/useAuthStore";
 
 function HomePage() {
-  const { products, loading, error, fetchProducts } = useProductStore();
+  const { products, loading, error, fetchProducts, resetForm } =
+    useProductStore();
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     fetchProducts();
@@ -14,13 +18,22 @@ function HomePage() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-8 ">
       <div className="flex justify-between items-center mb-8">
-        <button
-          className="btn btn-primary"
-          onClick={() => document.getElementById("add_product_modal").showModal()}
-        >
-          <PlusCircleIcon className="size-5 mr-2" />
-          Add Product
-        </button>
+        {user ? (
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              resetForm(); // form state is shared with the edit page
+              document.getElementById("add_product_modal").showModal();
+            }}
+          >
+            <PlusCircleIcon className="size-5 mr-2" />
+            Add Product
+          </button>
+        ) : (
+          <Link to="/login" className="btn btn-primary">
+            Log in to add products
+          </Link>
+        )}
         <button className="btn btn-ghost btn-circle" onClick={fetchProducts}>
           <RefreshCwIcon className="size-5" />
         </button>
