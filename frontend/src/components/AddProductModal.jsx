@@ -1,103 +1,60 @@
-import { DollarSignIcon, ImageIcon, Package2Icon, PlusCircleIcon } from "lucide-react";
+import { PlusIcon, XIcon } from "lucide-react";
 import { useProductStore } from "../store/useProductStore";
+import ProductFields from "./ProductFields";
+import ProductImage from "./ProductImage";
+
+export const ADD_PRODUCT_MODAL_ID = "add_product_modal";
 
 function AddProductModal() {
   const { addProduct, formData, setFormData, loading } = useProductStore();
+  const close = () => document.getElementById(ADD_PRODUCT_MODAL_ID).close();
 
   return (
-    <dialog id="add_product_modal" className="modal">
-      <div className="modal-box">
-        {/* CLOSE BUTTON */}
-        <form method="dialog">
-          <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">X</button>
-        </form>
+    <dialog id={ADD_PRODUCT_MODAL_ID} className="modal modal-bottom sm:modal-middle">
+      <div className="modal-box max-w-lg p-0 overflow-hidden bg-base-100">
+        {/* LIVE IMAGE PREVIEW */}
+        <div className="relative aspect-[16/9] bg-base-300">
+          <ProductImage src={formData.image} alt="Image preview" className="size-full" />
+          <button
+            type="button"
+            onClick={close}
+            className="btn btn-sm btn-circle border-0 bg-base-100/80 backdrop-blur absolute right-3 top-3"
+            aria-label="Close"
+          >
+            <XIcon className="size-4" />
+          </button>
+        </div>
 
-        {/* MODAL HEADER */}
-        <h3 className="font-bold text-xl mb-8">Add New Product</h3>
+        <div className="p-6">
+          <h3 className="text-xl font-bold">Add a new product</h3>
+          <p className="text-sm text-base-content/60 mt-1">
+            Paste an image link to see a preview above.
+          </p>
 
-        <form onSubmit={addProduct} className="space-y-6">
-          <div className="grid gap-6">
-            {/* PRODUCT NAME INPUT */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-base font-medium">Product Name</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50">
-                  <Package2Icon className="size-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Enter product name"
-                  className="input input-bordered w-full pl-10 py-3 focus:input-primary transition-colors duration-200"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
+          <form onSubmit={addProduct} className="space-y-4 mt-6">
+            <ProductFields formData={formData} setFormData={setFormData} />
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={close} className="btn btn-ghost">
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary min-w-36"
+                disabled={!formData.name || !formData.price || !formData.image || loading}
+              >
+                {loading ? (
+                  <span className="loading loading-spinner loading-sm" />
+                ) : (
+                  <>
+                    <PlusIcon className="size-4" />
+                    Add product
+                  </>
+                )}
+              </button>
             </div>
-
-            {/* PRODUCT PRICE INPUT */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-base font-medium">Price</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50">
-                  <DollarSignIcon className="size-5" />
-                </div>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  className="input input-bordered w-full pl-10 py-3 focus:input-primary transition-colors duration-200"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* PRODUCT IMAGE */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text text-base font-medium">Image URL</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50">
-                  <ImageIcon className="size-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="https://example.com/image.jpg"
-                  className="input input-bordered w-full pl-10 py-3 focus:input-primary transition-colors duration-200"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* MODAL ACTIONS */}
-          <div className="modal-action">
-            <form method="dialog">
-              <button className="btn btn-ghost">Cancel</button>
-            </form>
-            <button
-              type="submit"
-              className="btn btn-primary min-w-[120px]"
-              disabled={!formData.name || !formData.price || !formData.image || loading}
-            >
-              {loading ? (
-                <span className="loading loading-spinner loading-sm" />
-              ) : (
-                <>
-                  <PlusCircleIcon className="size-5 mr-2" />
-                  Add Product
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
       {/* BACKDROP */}

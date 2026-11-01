@@ -1,8 +1,24 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeftIcon, CalendarIcon, PackageXIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { useProductStore } from "../store/useProductStore";
 import { useAuthStore } from "../store/useAuthStore";
-import { useEffect } from "react";
-import { ArrowLeftIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import ProductFields from "../components/ProductFields";
+import ProductImage from "../components/ProductImage";
+import { formatDate, formatPrice } from "../lib/format";
+
+function DetailSkeleton() {
+  return (
+    <div className="grid gap-8 lg:gap-12 md:grid-cols-2">
+      <div className="skeleton aspect-square rounded-3xl" />
+      <div className="space-y-4">
+        <div className="skeleton h-10 w-3/4" />
+        <div className="skeleton h-8 w-1/3" />
+        <div className="skeleton h-4 w-1/4" />
+      </div>
+    </div>
+  );
+}
 
 function ProductPage() {
   const {
@@ -19,6 +35,7 @@ function ProductPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isOwner = user && currentProduct?.user_id === user.id;
+  const ready = currentProduct?.id === Number(id);
 
   useEffect(() => {
     fetchProduct(id);
@@ -32,127 +49,99 @@ function ProductPage() {
 
   if (error && !loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="alert alert-error">{error}</div>
-      </div>
-    );
-  }
-
-  // full-page spinner only until this product is loaded; saving uses the button spinner
-  if (currentProduct?.id !== Number(id)) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="loading loading-spinner loading-lg" />
-      </div>
+      <main className="max-w-md mx-auto px-4 py-24 text-center">
+        <div className="mx-auto size-16 rounded-2xl bg-error/10 text-error grid place-items-center">
+          <PackageXIcon className="size-8" />
+        </div>
+        <h1 className="text-2xl font-bold mt-6">{error}</h1>
+        <p className="text-base-content/60 mt-2">It may have been removed by its owner.</p>
+        <Link to="/" className="btn btn-primary mt-8">
+          Back to products
+        </Link>
+      </main>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <button onClick={() => navigate("/")} className="btn btn-ghost mb-8">
-        <ArrowLeftIcon className="size-4 mr-2" />
-        Back to Products
-      </button>
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <Link to="/" className="btn btn-ghost btn-sm gap-2 mb-6 -ml-3">
+        <ArrowLeftIcon className="size-4" />
+        All products
+      </Link>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* PRODUCT IMAGE */}
-        <div className="rounded-lg overflow-hidden shadow-lg bg-base-100">
-          <img
-            src={currentProduct?.image}
-            alt={currentProduct?.name}
-            className="size-full object-cover"
-          />
-        </div>
+      {!ready ? (
+        <DetailSkeleton />
+      ) : (
+        <div className="grid gap-8 lg:gap-12 md:grid-cols-2">
+          {/* IMAGE (owner sees a live preview of the URL being edited) */}
+          <div className="aspect-square rounded-3xl overflow-hidden bg-base-300 border border-base-content/5 md:sticky md:top-24 self-start">
+            <ProductImage
+              src={isOwner ? formData.image : currentProduct.image}
+              alt={currentProduct.name}
+              className="size-full"
+            />
+          </div>
 
-        {/* PRODUCT FORM */}
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h2 className="card-title text-2xl mb-6">
-              {isOwner ? "Edit Product" : "Product Details"}
-            </h2>
+          <div className="space-y-8">
+            {/* DETAILS */}
+            <div>
+              {isOwner && (
+                <span className="badge badge-primary badge-outline mb-4">Your listing</span>
+              )}
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                {currentProduct.name}
+              </h1>
+              <p className="text-3xl font-bold text-primary mt-4">
+                {formatPrice(currentProduct.price)}
+              </p>
+              <p className="flex items-center gap-2 text-sm text-base-content/60 mt-4">
+                <CalendarIcon className="size-4" />
+                Listed {formatDate(currentProduct.created_at)}
+              </p>
+            </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                updateProduct(id);
-              }}
-            >
-              {/* read-only for anyone but the owner */}
-              <fieldset disabled={!isOwner} className="space-y-6">
-                {/* PRODUCT NAME */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text text-base font-medium">Product Name</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter product name"
-                    className="input input-bordered w-full"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
+            {/* EDIT FORM (owner only) */}
+            {isOwner && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updateProduct(id);
+                }}
+                className="rounded-3xl bg-base-100 border border-base-content/5 p-6 space-y-4"
+              >
+                <h2 className="text-lg font-semibold">Edit listing</h2>
+                <ProductFields formData={formData} setFormData={setFormData} />
+
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="btn btn-ghost text-error hover:bg-error/10"
+                  >
+                    <Trash2Icon className="size-4" />
+                    Delete
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary min-w-40"
+                    disabled={loading || !formData.name || !formData.price || !formData.image}
+                  >
+                    {loading ? (
+                      <span className="loading loading-spinner loading-sm" />
+                    ) : (
+                      <>
+                        <SaveIcon className="size-4" />
+                        Save changes
+                      </>
+                    )}
+                  </button>
                 </div>
-
-                {/* PRODUCT PRICE */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text text-base font-medium">Price</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    className="input input-bordered w-full"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  />
-                </div>
-
-                {/* PRODUCT IMAGE URL */}
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text text-base font-medium">Image URL</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="https://example.com/image.jpg"
-                    className="input input-bordered w-full"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  />
-                </div>
-
-                {/* FORM ACTIONS */}
-                {isOwner && (
-                  <div className="flex justify-between mt-8">
-                    <button type="button" onClick={handleDelete} className="btn btn-error">
-                      <Trash2Icon className="size-4 mr-2" />
-                      Delete Product
-                    </button>
-
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={loading || !formData.name || !formData.price || !formData.image}
-                    >
-                      {loading ? (
-                        <span className="loading loading-spinner loading-sm" />
-                      ) : (
-                        <>
-                          <SaveIcon className="size-4 mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </fieldset>
-            </form>
+              </form>
+            )}
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </main>
   );
 }
 export default ProductPage;

@@ -1,68 +1,78 @@
 import { Link, useLocation } from "react-router-dom";
-import { LogOutIcon, ShoppingBagIcon, ShoppingCartIcon } from "lucide-react";
+import { LogOutIcon, ShoppingBagIcon } from "lucide-react";
+import toast from "react-hot-toast";
 import ThemeSelector from "./ThemeSelector";
-import { useProductStore } from "../store/useProductStore";
 import { useAuthStore } from "../store/useAuthStore";
 
 function Navbar() {
   const { pathname } = useLocation();
-  const isHomePage = pathname === "/";
-
-  const { products } = useProductStore();
   const { user, logout } = useAuthStore();
 
+  const handleLogout = async () => {
+    await logout();
+    toast.success("Logged out");
+  };
+
   return (
-    <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-content/10 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto">
-        <div className="navbar px-4 min-h-[4rem] justify-between">
-          {/* LOGO */}
-          <div className="flex-1 lg:flex-none">
-            <Link to="/" className="hover:opacity-80 transition-opacity">
-              <div className="flex items-center gap-2">
-                <ShoppingCartIcon className="size-9 text-primary" />
-                <span
-                  className="font-semibold font-mono tracking-widest text-2xl
-                    bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
-                >
-                  Product Listing App
-                </span>
-              </div>
-            </Link>
-          </div>
+    <header className="sticky top-0 z-40 bg-base-200/70 backdrop-blur-xl border-b border-base-content/5">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        {/* LOGO */}
+        <Link to="/" className="flex items-center gap-2.5 font-bold text-lg tracking-tight">
+          <span className="size-9 rounded-xl bg-gradient-to-br from-primary to-secondary grid place-items-center text-primary-content shadow-md shadow-primary/30">
+            <ShoppingBagIcon className="size-5" />
+          </span>
+          <span className="hidden sm:inline">Product Listing</span>
+        </Link>
 
-          {/* RIGHT SECTION */}
-          <div className="flex items-center gap-4">
-            <ThemeSelector />
+        {/* RIGHT SECTION */}
+        <div className="flex items-center gap-2">
+          <ThemeSelector />
 
-            {isHomePage && (
-              <div className="indicator">
-                <div className="p-2 rounded-full hover:bg-base-200 transition-colors">
-                  <ShoppingBagIcon className="size-5" />
-                  <span className="badge badge-sm badge-primary indicator-item">
-                    {products.length}
-                  </span>
+          {user ? (
+            <div className="dropdown dropdown-end">
+              <button
+                tabIndex={0}
+                className="btn btn-ghost btn-circle avatar placeholder"
+                aria-label="Account menu"
+              >
+                <div className="w-9 rounded-full bg-gradient-to-br from-primary to-accent text-primary-content">
+                  <span className="font-semibold">{user.email[0].toUpperCase()}</span>
                 </div>
-              </div>
-            )}
-
-            {user ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm hidden sm:inline">{user.email}</span>
-                <button className="btn btn-ghost btn-circle" onClick={logout} aria-label="Log out">
-                  <LogOutIcon className="size-5" />
-                </button>
-              </div>
-            ) : (
-              pathname !== "/login" && (
-                <Link to="/login" className="btn btn-primary btn-sm">
+              </button>
+              <ul
+                tabIndex={0}
+                className="dropdown-content menu mt-3 w-64 p-2 rounded-2xl bg-base-100 border border-base-content/10 shadow-2xl z-50"
+              >
+                <li className="px-3 py-2">
+                  <span className="text-xs text-base-content/50 p-0 pointer-events-none">
+                    Signed in as
+                  </span>
+                  <span className="font-medium truncate p-0 pointer-events-none">{user.email}</span>
+                </li>
+                <div className="divider my-0" />
+                <li>
+                  <button onClick={handleLogout} className="text-error">
+                    <LogOutIcon className="size-4" />
+                    Log out
+                  </button>
+                </li>
+              </ul>
+            </div>
+          ) : (
+            pathname !== "/login" && (
+              <>
+                <Link to="/login" className="btn btn-ghost btn-sm">
                   Log in
                 </Link>
-              )
-            )}
-          </div>
+                <Link to="/login?mode=signup" className="btn btn-primary btn-sm">
+                  Sign up
+                </Link>
+              </>
+            )
+          )}
         </div>
-      </div>
-    </div>
+      </nav>
+    </header>
   );
 }
 export default Navbar;
