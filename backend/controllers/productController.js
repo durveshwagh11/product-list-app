@@ -20,8 +20,7 @@ const parseProduct = ({ name, price, image }) => {
   return { name: cleanName, price: cleanPrice, image: cleanImage };
 };
 
-const INVALID_MESSAGE =
-  "Name, a valid price and an http(s) image URL are required";
+const INVALID_MESSAGE = "Name, a valid price and an http(s) image URL are required";
 
 // Get all products
 export const getProducts = async (req, res) => {
@@ -66,9 +65,7 @@ export const getProduct = async (req, res) => {
     `;
 
     if (!product) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Product not found" });
+      return res.status(404).json({ success: false, message: "Product not found" });
     }
 
     res.status(200).json({ success: true, data: product });
@@ -95,9 +92,7 @@ export const updateProduct = async (req, res) => {
     `;
 
     if (!updatedProduct) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Product not found or not yours" });
+      return res.status(404).json({ success: false, message: "Product not found or not yours" });
     }
 
     res.status(200).json({ success: true, data: updatedProduct });
@@ -117,9 +112,7 @@ export const deleteProduct = async (req, res) => {
     `;
 
     if (!deletedProduct) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Product not found or not yours" });
+      return res.status(404).json({ success: false, message: "Product not found or not yours" });
     }
 
     res.status(200).json({ success: true, data: deletedProduct });

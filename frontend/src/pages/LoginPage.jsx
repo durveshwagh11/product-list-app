@@ -33,9 +33,7 @@ function LoginPage() {
     <main className="max-w-md mx-auto px-4 py-16">
       <div className="card bg-base-100 shadow-lg">
         <form onSubmit={handleSubmit} className="card-body space-y-4">
-          <h2 className="card-title text-2xl">
-            {isLogin ? "Log in" : "Create account"}
-          </h2>
+          <h2 className="card-title text-2xl">{isLogin ? "Log in" : "Create account"}</h2>
 
           <label className="form-control">
             <span className="label-text text-base font-medium mb-1">Email</span>
@@ -50,9 +48,7 @@ function LoginPage() {
           </label>
 
           <label className="form-control">
-            <span className="label-text text-base font-medium mb-1">
-              Password
-            </span>
+            <span className="label-text text-base font-medium mb-1">Password</span>
             <input
               type="password"
               required
@@ -64,11 +60,7 @@ function LoginPage() {
             />
           </label>
 
-          <button
-            type="submit"
-            className="btn btn-primary w-full"
-            disabled={submitting}
-          >
+          <button type="submit" className="btn btn-primary w-full" disabled={submitting}>
             {submitting ? (
               <span className="loading loading-spinner loading-sm" />
             ) : isLogin ? (

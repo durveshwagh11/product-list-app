@@ -19,10 +19,7 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <div
-      className="min-h-screen bg-base-200 transition-colors duration-300"
-      data-theme={theme}
-    >
+    <div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme={theme}>
       <Navbar />
 
       <Routes>

@@ -7,8 +7,7 @@ import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 
 function HomePage() {
-  const { products, loading, error, fetchProducts, resetForm } =
-    useProductStore();
+  const { products, loading, error, fetchProducts, resetForm } = useProductStore();
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {

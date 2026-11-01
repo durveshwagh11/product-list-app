@@ -1,8 +1,9 @@
 import { sql } from "../config/db.js";
 import {
-  clearAuthCookie,
+  clearSession,
+  consumeRefreshToken,
   hashPassword,
-  setAuthCookie,
+  issueSession,
   verifyPassword,
 } from "../lib/auth.js";
 
@@ -18,17 +19,13 @@ const readCredentials = (body) => ({
 export const signup = async (req, res) => {
   const { email, password } = readCredentials(req.body);
   if (!EMAIL_RE.test(email)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Enter a valid email" });
+    return res.status(400).json({ success: false, message: "Enter a valid email" });
   }
   if (password.length < 8) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Password must be at least 8 characters",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 8 characters",
+    });
   }
 
   try {
@@ -39,11 +36,9 @@ export const signup = async (req, res) => {
       RETURNING id, email;
     `;
     if (!user) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Email already registered" });
+      return res.status(409).json({ success: false, message: "Email already registered" });
     }
-    setAuthCookie(res, user.id);
+    await issueSession(res, user.id);
     res.status(201).json({ success: true, data: user });
   } catch (error) {
     console.error("Error in signup function", error);
@@ -55,34 +50,50 @@ export const login = async (req, res) => {
   const { email, password } = readCredentials(req.body);
 
   try {
-    const [user] =
-      await sql`SELECT id, email, password_hash FROM users WHERE email=${email};`;
+    const [user] = await sql`SELECT id, email, password_hash FROM users WHERE email=${email};`;
     if (!user || !(await verifyPassword(password, user.password_hash))) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid email or password" });
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
-    setAuthCookie(res, user.id);
-    res
-      .status(200)
-      .json({ success: true, data: { id: user.id, email: user.email } });
+    // housekeeping: drop this user's expired refresh tokens
+    await sql`DELETE FROM refresh_tokens WHERE user_id=${user.id} AND expires_at < now()`;
+    await issueSession(res, user.id);
+    res.status(200).json({ success: true, data: { id: user.id, email: user.email } });
   } catch (error) {
     console.error("Error in login function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 
-export const logout = (req, res) => {
-  clearAuthCookie(res);
+// rotates: old refresh token is burned, a new access + refresh pair is issued
+export const refresh = async (req, res) => {
+  try {
+    const userId = await consumeRefreshToken(req.cookies.refresh_token);
+    if (!userId) {
+      clearSession(res);
+      return res.status(401).json({ success: false, message: "Session expired, please log in" });
+    }
+    await issueSession(res, userId);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error in refresh function", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    await consumeRefreshToken(req.cookies.refresh_token); // revoke server-side
+  } catch (error) {
+    console.error("Error in logout function", error);
+  }
+  clearSession(res);
   res.status(200).json({ success: true });
 };
 
 export const me = async (req, res) => {
   try {
-    const [user] =
-      await sql`SELECT id, email FROM users WHERE id=${req.userId};`;
-    if (!user)
-      return res.status(401).json({ success: false, message: "Please log in" });
+    const [user] = await sql`SELECT id, email FROM users WHERE id=${req.userId};`;
+    if (!user) return res.status(401).json({ success: false, message: "Please log in" });
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error("Error in me function", error);

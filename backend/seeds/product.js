@@ -1,4 +1,4 @@
-import {sql} from "../config/db.js";
+import { sql } from "../config/db.js";
 
 const SAMPLE_PRODUCTS = [
   {

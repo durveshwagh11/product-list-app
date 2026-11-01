@@ -6,8 +6,7 @@ import toast from "react-hot-toast";
 const API_URL = "/api/products";
 const EMPTY_FORM = { name: "", price: "", image: "" };
 
-const errorMessage = (error) =>
-  error.response?.data?.message || "Something went wrong";
+const errorMessage = (error) => error.response?.data?.message || "Something went wrong";
 
 export const useProductStore = create((set, get) => ({
   // products state
@@ -47,8 +46,7 @@ export const useProductStore = create((set, get) => ({
       const response = await axios.get(API_URL);
       set({ products: response.data.data, error: null });
     } catch (err) {
-      if (err.response?.status === 429)
-        set({ error: "Rate limit exceeded", products: [] });
+      if (err.response?.status === 429) set({ error: "Rate limit exceeded", products: [] });
       else set({ error: "Something went wrong", products: [] });
     } finally {
       set({ loading: false });
