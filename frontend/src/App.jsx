@@ -35,7 +35,7 @@ function App() {
 				</Routes>
 			</div>
 
-			<footer className='border-t border-base-content/5 py-6 text-center text-sm text-base-content/50'>Product Listing · React, Express &amp; Supabase</footer>
+			<footer className='border-t border-base-content/5 py-6 text-center text-sm text-base-content/50'>Product Listing</footer>
 
 			<Toaster position='bottom-right' toastOptions={{ style: TOAST_STYLE }} />
 		</div>
